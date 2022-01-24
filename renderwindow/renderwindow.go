@@ -1,6 +1,7 @@
 package renderwindow
 
 import (
+	"github.com/kallahir/solitaire/entity"
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -19,6 +20,8 @@ func NewRenderWindow(title string, w, h int32) (*RenderWindow, error) {
 	if err != nil {
 		return nil, err
 	}
+	renderer.SetDrawColor(82, 115, 68, 0)
+	renderer.Clear()
 	return &RenderWindow{Window: window, Renderer: renderer}, nil
 }
 
@@ -38,9 +41,9 @@ func (rw *RenderWindow) Clear() {
 	rw.Renderer.Clear()
 }
 
-func (rw *RenderWindow) Render(texture *sdl.Texture) {
-	// nil, nil == render entire screen
-	rw.Renderer.Copy(texture, nil, nil)
+func (rw *RenderWindow) Render(entity *entity.Entity) {
+	dst := &sdl.Rect{X: entity.X, Y: entity.Y, W: entity.CurrentFrame.W, H: entity.CurrentFrame.H}
+	rw.Renderer.Copy(entity.Texture, nil, dst)
 }
 
 func (rw *RenderWindow) Display() {
