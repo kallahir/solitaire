@@ -22,47 +22,64 @@ func main() {
 	}
 	defer rw.CleanUp()
 
-	// grassTexture, err := rw.LoadTexture("../resources/gfx/ground_grass_1.png")
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// entity := entity.NewEntity(0, 0, grassTexture)
-
 	cardTexture, err := rw.LoadTexture("../resources/gfx/card.gif")
 	if err != nil {
 		panic(err)
 	}
 
+	backTexture, err := rw.LoadTexture("../resources/gfx/back.gif")
+	if err != nil {
+		panic(err)
+	}
+
+	placeholderTexture, err := rw.LoadTexture("../resources/gfx/placeholder.gif")
+	if err != nil {
+		panic(err)
+	}
+
 	var cards []*entity.Entity
+	var spacing int32 = 30
 	for i := 0; i < 7; i++ {
-		if i == 4 {
-			continue
+		for j := 0; j <= i; j++ {
+			if i == j {
+				cards = append(cards, entity.NewEntity(int32(i)*116, 176+(int32(j)*spacing+spacing), cardTexture))
+			} else {
+				cards = append(cards, entity.NewEntity(int32(i)*116, 176+(int32(j)*spacing+spacing), backTexture))
+			}
 		}
-		cards = append(cards, entity.NewEntity(int32(i)*116, 0, cardTexture))
+	}
+
+	for i := 0; i < 7; i++ {
+		switch {
+		case i == 4:
+			continue
+		case i < 4:
+			cards = append(cards, entity.NewEntity(int32(i)*116, 0, placeholderTexture))
+		case i == 5:
+			cards = append(cards, entity.NewEntity(int32(i)*116, 0, cardTexture))
+		case i == 6:
+			cards = append(cards, entity.NewEntity(int32(i)*116, 0, backTexture))
+		}
 	}
 
 	running := true
-	// shouldMove := false
+	shouldMove := false
 	for running {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
-			// switch t := event.(type) {
-			switch event.(type) {
+			switch t := event.(type) {
 			case *sdl.QuitEvent:
 				fmt.Println("Closing Solitaire!")
 				running = false
-				// case *sdl.MouseMotionEvent:
-				// 	if shouldMove {
-				// 		entity.X, entity.Y = t.X, t.Y
-				// 	}
-				// case *sdl.MouseButtonEvent:
-				// 	if t.State == sdl.PRESSED {
-				// 		if shouldMove {
-				// 			shouldMove = false
-				// 		} else {
-				// 			shouldMove = true
-				// 		}
-				// 	}
+			case *sdl.MouseMotionEvent:
+				if shouldMove {
+					cards[len(cards)-2].X, cards[len(cards)-2].Y = t.X, t.Y
+				}
+			case *sdl.MouseButtonEvent:
+				if shouldMove {
+					shouldMove = false
+				} else {
+					shouldMove = true
+				}
 			}
 		}
 		rw.Clear()
