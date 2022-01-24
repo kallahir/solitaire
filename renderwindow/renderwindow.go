@@ -1,7 +1,7 @@
 package renderwindow
 
 import (
-	"github.com/kallahir/solitaire/entity"
+	"github.com/kallahir/solitaire/card"
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -11,7 +11,7 @@ type RenderWindow struct {
 	Renderer *sdl.Renderer
 }
 
-func NewRenderWindow(title string, w, h int32) (*RenderWindow, error) {
+func New(title string, w, h int32) (*RenderWindow, error) {
 	window, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, w, h, sdl.WINDOW_SHOWN)
 	if err != nil {
 		return nil, err
@@ -41,9 +41,9 @@ func (rw *RenderWindow) Clear() {
 	rw.Renderer.Clear()
 }
 
-func (rw *RenderWindow) Render(entity *entity.Entity) {
-	dst := &sdl.Rect{X: entity.X, Y: entity.Y, W: entity.CurrentFrame.W, H: entity.CurrentFrame.H}
-	rw.Renderer.Copy(entity.Texture, nil, dst)
+func (rw *RenderWindow) Render(card *card.Card) {
+	dst := &sdl.Rect{X: card.Frame.X, Y: card.Frame.Y, W: card.Frame.W, H: card.Frame.H}
+	rw.Renderer.Copy(card.Texture, nil, dst)
 }
 
 func (rw *RenderWindow) Display() {
