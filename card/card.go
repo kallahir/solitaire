@@ -19,15 +19,11 @@ const (
 
 func New(rank int32, suit string, x, y int32, texture *sdl.Texture) *Card {
 	return &Card{
-		Rank: rank,
-		Suit: suit,
-		Frame: &sdl.Rect{
-			X: x,
-			Y: y,
-			H: Height,
-			W: Width,
-		},
-		Texture: texture,
+		Rank:          rank,
+		Suit:          suit,
+		Frame:         &sdl.Rect{X: x, Y: y, H: Height, W: Width},
+		Texture:       texture,
+		IsFlippedDown: false,
 	}
 }
 

@@ -50,7 +50,7 @@ func New(empty, back *sdl.Texture, deck []*card.Card) *Board {
 	}
 
 	var suitePile [4][]*card.Card
-	for i, _ := range card.Suits() {
+	for i := range card.Suits() {
 		suitePile[i] = append(suitePile[i], card.New(-1, "-1", int32(i)*card.Width, 0, empty))
 	}
 
