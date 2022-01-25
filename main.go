@@ -51,7 +51,7 @@ func main() {
 	shouldMove := false
 	var originalX, originalY int32
 	for running {
-		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+		for event := sdl.WaitEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
 				fmt.Println("Closing Solitaire!")
@@ -115,7 +115,7 @@ func main() {
 				}
 			}
 		}
-		// Render Drwa Pile
+		// Render Draw Pile
 		if len(board.DrawPile) > 0 {
 			deckCard.Texture = backTexture
 		} else {

@@ -3,8 +3,11 @@
 ## Overview
 Solitaire game written in Golang using [SDL2 binding for Go](https://github.com/veandco/go-sdl2).
 
-## TODO
-* TBD.
+## Current Status 
+
+<p align="center">
+<img src="resources/examples/example01.gif" align="center" hspace="5" vspace="5">
+</p>
 
 ## Copyright Attribution
 
