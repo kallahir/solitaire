@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
-	"time"
 
+	"github.com/kallahir/solitaire/board"
 	"github.com/kallahir/solitaire/card"
 	"github.com/kallahir/solitaire/renderwindow"
 	"github.com/veandco/go-sdl2/sdl"
@@ -24,51 +23,15 @@ func main() {
 	}
 	defer rw.CleanUp()
 
-	// cardTexture, err := rw.LoadTexture("../resources/gfx/card.gif")
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// var cards []*entity.Entity
-	// var spacing int32 = 30
-	// for i := 0; i < 7; i++ {
-	// 	for j := 0; j <= i; j++ {
-	// 		if i == j {
-	// 			cards = append(cards, entity.NewEntity(int32(i)*116, 176+(int32(j)*spacing+spacing), cardTexture))
-	// 		} else {
-	// 			cards = append(cards, entity.NewEntity(int32(i)*116, 176+(int32(j)*spacing+spacing), backTexture))
-	// 		}
-	// 	}
-	// }
-
-	// for i := 0; i < 7; i++ {
-	// 	switch {
-	// 	case i == 4:
-	// 		continue
-	// 	case i < 4:
-	// 		cards = append(cards, entity.NewEntity(int32(i)*116, 0, placeholderTexture))
-	// 	case i == 5:
-	// 		cards = append(cards, entity.NewEntity(int32(i)*116, 0, cardTexture))
-	// 	case i == 6:
-	// 		cards = append(cards, entity.NewEntity(int32(i)*116, 0, backTexture))
-	// 	}
-	// }
-
-	var drawPile []*card.Card
-	for rank := int32(1); rank <= 13; rank++ {
-		for _, suit := range []string{"s", "h", "d", "c"} {
+	var deck []*card.Card
+	for _, rank := range card.Ranks() {
+		for _, suit := range card.Suits() {
 			texture, err := rw.LoadTexture(fmt.Sprintf("../resources/cards/%02d%s.gif", rank, suit))
 			if err != nil {
 				panic(err)
 			}
-			drawPile = append(drawPile, card.New(rank, suit, 6*card.Width, 0, texture))
+			deck = append(deck, card.New(rank, suit, 6*card.Width, 0, texture))
 		}
-	}
-
-	// Shuffle Cards
-	for i := 0; i < 100; i++ {
-		rand.Seed(time.Now().UnixNano())
-		rand.Shuffle(len(drawPile), func(i, j int) { drawPile[i], drawPile[j] = drawPile[j], drawPile[i] })
 	}
 
 	backTexture, err := rw.LoadTexture("../resources/cards/back.gif")
@@ -76,65 +39,96 @@ func main() {
 		panic(err)
 	}
 
-	placeholderTexture, err := rw.LoadTexture("../resources/cards/placeholder.gif")
+	emptyTexture, err := rw.LoadTexture("../resources/cards/empty.gif")
 	if err != nil {
 		panic(err)
 	}
 
+	board := board.New(emptyTexture, backTexture, deck)
+
 	running := true
-	var discardPile []*card.Card
 	deckCard := card.New(-1, "-1", 6*card.Width, 0, nil)
-	// shouldMove := false
-	// playingCard := cards[len(cards)-2]
-	// originalX, originalY := playingCard.X, playingCard.Y
+	shouldMove := false
+	var originalX, originalY int32
 	for running {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
 				fmt.Println("Closing Solitaire!")
 				running = false
-			// case *sdl.MouseMotionEvent:
-			// 	fmt.Println("Mouse", t.Which, "moved by", t.XRel, t.YRel, "at", t.X, t.Y)
-			// 	// if shouldMove {
-			// 	// 	playingCard.X, playingCard.Y = t.X, t.Y
-			// 	// }
+			case *sdl.MouseMotionEvent:
+				fmt.Println("Mouse", t.Which, "moved by", t.XRel, t.YRel, "at", t.X, t.Y)
+				if shouldMove {
+					c := board.DiscardPile[0]
+					c.Frame.X, c.Frame.Y = t.X, t.Y
+				}
 			case *sdl.MouseButtonEvent:
 				if t.State == sdl.RELEASED {
+					if shouldMove {
+						shouldMove = false
+						c := board.DiscardPile[0]
+						c.Frame.X, c.Frame.Y = originalX, originalY
+					}
+
 					if t.X > 6*card.Width && t.X < 7*card.Width && t.Y > 0 && t.Y < card.Height {
 						fmt.Println("Mouse", t.Which, "button", t.Button, "released at", t.X, t.Y)
-						if len(drawPile) > 0 {
-							c := drawPile[len(drawPile)-1]
+						if len(board.DrawPile) > 0 {
+							c := board.DrawPile[len(board.DrawPile)-1]
 							c.Frame.X = 5 * card.Width
 
-							drawPile = drawPile[:len(drawPile)-1]
-							discardPile = append([]*card.Card{c}, discardPile...)
+							board.DrawPile = board.DrawPile[:len(board.DrawPile)-1]
+							board.DiscardPile = append([]*card.Card{c}, board.DiscardPile...)
 						} else {
-							drawPile = discardPile
-							discardPile = []*card.Card{}
+							board.DrawPile = board.DiscardPile
+							board.DiscardPile = []*card.Card{}
 						}
 					}
 				}
-				// if t.X > playingCard.X && t.X < playingCard.X+playingCard.CurrentFrame.W && t.Y > playingCard.Y && t.Y < playingCard.Y+playingCard.CurrentFrame.H && !shouldMove {
-				// 	shouldMove = true
-				// } else {
-				// 	shouldMove = false
-				// 	playingCard.X, playingCard.Y = originalX, originalY
-				// }
+				if t.State == sdl.PRESSED {
+					if len(board.DiscardPile) > 0 {
+						c := board.DiscardPile[0]
+						if t.X > c.Frame.X && t.X < c.Frame.X+c.Frame.W && t.Y > c.Frame.Y && t.Y < c.Frame.Y+c.Frame.H && !shouldMove {
+							shouldMove = true
+							originalX, originalY = c.Frame.X, c.Frame.Y
+						}
+					}
+				}
 			}
 		}
 		rw.Clear()
-		if len(drawPile) > 0 {
+		// Render Suite Pile
+		for _, cards := range board.SuitPile {
+			for _, c := range cards {
+				rw.Render(c)
+			}
+		}
+		// Render Columns
+		for _, cards := range board.Columns {
+			for _, c := range cards {
+				if c.IsFlippedDown {
+					originalTexture := c.Texture
+					c.Texture = board.BackCardTexture
+					rw.Render(c)
+					c.Texture = originalTexture
+				} else {
+					rw.Render(c)
+				}
+			}
+		}
+		// Render Drwa Pile
+		if len(board.DrawPile) > 0 {
 			deckCard.Texture = backTexture
 		} else {
-			deckCard.Texture = placeholderTexture
+			deckCard.Texture = emptyTexture
 		}
 		rw.Render(deckCard)
-		if len(discardPile) > 0 {
-			rw.Render(discardPile[0])
+		// Render Discard Pile
+		if len(board.DiscardPile) > 1 && shouldMove {
+			rw.Render(board.DiscardPile[1])
+			rw.Render(board.DiscardPile[0])
+		} else if len(board.DiscardPile) > 0 {
+			rw.Render(board.DiscardPile[0])
 		}
-		// for _, card := range deck {
-		// 	rw.Render(card)
-		// }
 		rw.Display()
 	}
 }
