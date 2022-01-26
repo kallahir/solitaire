@@ -64,19 +64,24 @@ func main() {
 				boardPosition, card := gameBoard.CheckPosition(t.X, t.Y)
 				if t.State == sdl.RELEASED {
 					if boardPosition == board.DrawPosition && !shouldMove {
-						fmt.Println("DRAWING CARD...")
 						gameBoard.DrawCard()
 					}
 					if shouldMove {
+						// Card has been dropped? Where?
+						fmt.Println("CARD: ", pc.CardDetails, " DROPPED AT: ", boardPosition, " OVER CARD:", card)
 						shouldMove = false
-						pc.CardDetails.Frame.X, pc.CardDetails.Frame.Y = pc.OriginalX, pc.OriginalY
-						pc.CardDetails = nil
+						if !gameBoard.MoveCard(pc, boardPosition) {
+							pc.CardDetails.Frame.X, pc.CardDetails.Frame.Y = pc.OriginalX, pc.OriginalY
+							pc.CardDetails.IsBeingUsed = false
+							pc.CardDetails = nil
+						}
 					}
 				}
 				if t.State == sdl.PRESSED && boardPosition != "" {
-					if boardPosition != board.DrawPosition && !shouldMove {
+					if boardPosition != board.DrawPosition && !shouldMove && card.Rank != -1 && card.Suit != "-1" {
 						shouldMove = true
 						pc.CardDetails = card
+						pc.CardDetails.IsBeingUsed = true
 						pc.OriginalPile = boardPosition
 						pc.OriginalX, pc.OriginalY = card.Frame.X, card.Frame.Y
 					}

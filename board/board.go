@@ -3,6 +3,8 @@ package board
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/kallahir/solitaire/card"
@@ -13,17 +15,6 @@ const (
 	NumberOfColumns = 7
 	DrawPosition    = "dwp"
 	DiscardPosition = "ddp"
-	SuitPile1       = "s1"
-	SuitPile2       = "s2"
-	SuitPile3       = "s3"
-	SuitPile4       = "s4"
-	Column1         = "c1"
-	Column2         = "c2"
-	Column3         = "c3"
-	Column4         = "c4"
-	Column5         = "c5"
-	Column6         = "c6"
-	Column7         = "c7"
 )
 
 type Board struct {
@@ -79,6 +70,7 @@ func New(empty, back *sdl.Texture, deck []*card.Card) *Board {
 }
 
 func (b *Board) DrawCard() {
+	fmt.Println("DRAWING CARD...")
 	if len(b.DrawPile) > 0 {
 		b.DiscardPile = append([]*card.Card{b.DrawPile[len(b.DrawPile)-1]}, b.DiscardPile...)
 		b.DrawPile = b.DrawPile[:len(b.DrawPile)-1]
@@ -95,29 +87,20 @@ func (b *Board) CheckPosition(x, y int32) (string, *card.Card) {
 	}
 	if checkCollision(x, y, b.DiscardPile[0].Frame) {
 		fmt.Println("DISCARD PILE | CARD: ", b.DiscardPile[0])
-		if len(b.DiscardPile) == 1 {
-			return "", nil
-		}
 		return DiscardPosition, b.DiscardPile[0]
 	}
 	for i := range card.Suits() {
-		pile := b.SuitPile[i]
-		if len(pile) == 1 {
-			break
-		}
-		if checkCollision(x, y, pile[len(pile)-1].Frame) {
-			fmt.Println("SUIT PILE #", i+1, " | CARD: ", pile[len(pile)-1])
-			return fmt.Sprintf("s%d", i+1), pile[len(pile)-1]
+		card := b.SuitPile[i][len(b.SuitPile[i])-1]
+		if !card.IsBeingUsed && checkCollision(x, y, card.Frame) {
+			fmt.Println("SUIT PILE #", i, " | CARD: ", card)
+			return fmt.Sprintf("s%d", i), card
 		}
 	}
 	for i := range b.Columns {
-		column := b.Columns[i]
-		if len(column) == 1 {
-			break
-		}
-		if checkCollision(x, y, column[len(column)-1].Frame) {
-			fmt.Println("COLUMN #", i+1, " | CARD: ", column[len(column)-1])
-			return fmt.Sprintf("c%d", i+1), column[len(column)-1]
+		card := b.Columns[i][len(b.Columns[i])-1]
+		if !card.IsBeingUsed && checkCollision(x, y, card.Frame) {
+			fmt.Println("COLUMN #", i, " | CARD: ", card)
+			return fmt.Sprintf("c%d", i), card
 		}
 	}
 	return "", nil
@@ -128,4 +111,52 @@ func checkCollision(x, y int32, frame *sdl.Rect) bool {
 		return true
 	}
 	return false
+}
+
+func (b *Board) MoveCard(pc *card.PlayingCard, position string) bool {
+	// TODO: Handle movement from DrawPile and check if movement is valid
+	from := strings.Split(pc.OriginalPile, "")
+	if len(from) > 2 || len(from) == 0 {
+		return false
+	}
+	to := strings.Split(position, "")
+	if len(to) > 2 || len(to) == 0 {
+		fmt.Println("TRYING TO MOVE CARD TO DRAW, DISCARD PILE OR SAME PLACE")
+		return false
+	}
+	fmt.Println("MOVING FROM: ", from, " TO: ", to)
+	var c *card.Card
+	switch from[0] {
+	case "c":
+		// FIXME: Handle converstion error
+		idx, _ := strconv.Atoi(from[1])
+		c = b.Columns[idx][len(b.Columns[idx])-1]
+		c.IsBeingUsed = false
+		b.Columns[idx] = b.Columns[idx][:len(b.Columns[idx])-1]
+		b.Columns[idx][len(b.Columns[idx])-1].IsFlippedDown = false
+	case "s":
+		// FIXME: Handle converstion error
+		idx, _ := strconv.Atoi(from[1])
+		c = b.SuitPile[idx][len(b.SuitPile[idx])-1]
+		c.IsBeingUsed = false
+		b.SuitPile[idx] = b.SuitPile[idx][:len(b.SuitPile[idx])-1]
+	}
+	switch to[0] {
+	case "c":
+		// FIXME: Handle converstion error
+		idx, _ := strconv.Atoi(to[1])
+		last := b.Columns[idx][len(b.Columns[idx])-1]
+		c.Frame.X, c.Frame.Y = last.Frame.X, last.Frame.Y
+		if len(b.Columns[idx]) > 1 {
+			c.Frame.Y += card.Spacing
+		}
+		b.Columns[idx] = append(b.Columns[idx], c)
+	case "s":
+		// FIXME: Handle converstion error
+		idx, _ := strconv.Atoi(to[1])
+		last := b.SuitPile[idx][len(b.SuitPile[idx])-1]
+		c.Frame.X, c.Frame.Y = last.Frame.X, last.Frame.Y
+		b.SuitPile[idx] = append(b.SuitPile[idx], c)
+	}
+	return true
 }

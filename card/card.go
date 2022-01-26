@@ -8,6 +8,7 @@ type Card struct {
 	Frame         *sdl.Rect
 	Texture       *sdl.Texture
 	IsFlippedDown bool
+	IsBeingUsed   bool
 }
 
 type PlayingCard struct {
@@ -31,6 +32,7 @@ func New(rank int32, suit string, x, y int32, texture *sdl.Texture) *Card {
 		Frame:         &sdl.Rect{X: x, Y: y, H: Height, W: Width},
 		Texture:       texture,
 		IsFlippedDown: false,
+		IsBeingUsed:   false,
 	}
 }
 
