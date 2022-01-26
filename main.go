@@ -46,7 +46,6 @@ func main() {
 
 	running := true
 	gameBoard := board.New(emptyTexture, backTexture, deck)
-	// TODO: Refactor variables below
 	deckCard := card.New(-1, "-1", 6*card.Width, 0, nil)
 	shouldMove := false
 	pc := new(card.PlayingCard)
@@ -67,10 +66,9 @@ func main() {
 						gameBoard.DrawCard()
 					}
 					if shouldMove {
-						// Card has been dropped? Where?
 						fmt.Println("CARD: ", pc.CardDetails, " DROPPED AT: ", boardPosition, " OVER CARD:", card)
 						shouldMove = false
-						if !gameBoard.MoveCard(pc, boardPosition) {
+						if !gameBoard.MoveCard(pc, card, boardPosition) {
 							pc.CardDetails.Frame.X, pc.CardDetails.Frame.Y = pc.OriginalX, pc.OriginalY
 							pc.CardDetails.IsBeingUsed = false
 							pc.CardDetails = nil

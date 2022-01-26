@@ -87,7 +87,9 @@ func (b *Board) CheckPosition(x, y int32) (string, *card.Card) {
 	}
 	if checkCollision(x, y, b.DiscardPile[0].Frame) {
 		fmt.Println("DISCARD PILE | CARD: ", b.DiscardPile[0])
-		return DiscardPosition, b.DiscardPile[0]
+		if !b.DiscardPile[0].IsBeingUsed {
+			return DiscardPosition, b.DiscardPile[0]
+		}
 	}
 	for i := range card.Suits() {
 		card := b.SuitPile[i][len(b.SuitPile[i])-1]
@@ -113,36 +115,70 @@ func checkCollision(x, y int32, frame *sdl.Rect) bool {
 	return false
 }
 
-func (b *Board) MoveCard(pc *card.PlayingCard, position string) bool {
-	// TODO: Handle movement from DrawPile and check if movement is valid
+func (b *Board) MoveCard(pc *card.PlayingCard, destinationCard *card.Card, position string) bool {
 	from := strings.Split(pc.OriginalPile, "")
-	if len(from) > 2 || len(from) == 0 {
+	if len(from) == 0 {
 		return false
 	}
+
 	to := strings.Split(position, "")
 	if len(to) > 2 || len(to) == 0 {
-		fmt.Println("TRYING TO MOVE CARD TO DRAW, DISCARD PILE OR SAME PLACE")
+		fmt.Println("TRYING TO MOVE CARD TO DRAW PILE, DISCARD PILE OR SAME PLACE")
 		return false
 	}
+
+	fmt.Println("VALIDATING IF: ", pc, " CAN BE PLACED ON TOP OF: ", destinationCard, " AT POSITION: ", to)
+	switch to[0] {
+	case "c":
+		idx, _ := strconv.Atoi(to[1])
+		if len(b.Columns[idx]) == 1 {
+			break
+		}
+		if pc.CardDetails.Rank != destinationCard.Rank-1 || !pc.CardDetails.ValidOverlappingSuit(destinationCard) {
+			fmt.Println("CARD CAN'T BE PLACED INTO COLUMN ", idx)
+			return false
+		}
+	case "s":
+		// FIXME: Handle converstion error
+		idx, _ := strconv.Atoi(to[1])
+		if len(b.SuitPile[idx]) == 1 {
+			if pc.CardDetails.Rank != card.Ranks()[0] {
+				fmt.Println("FIRST CARD FROM THE SUIT PILE MUST BE A(1)")
+				return false
+			}
+			break
+		}
+		if pc.CardDetails.Rank != destinationCard.Rank+1 || pc.CardDetails.Suit != destinationCard.Suit {
+			fmt.Println("CARD CAN'T BE PLACED INTO SUIT PILE ", idx)
+			return false
+		}
+	}
+
 	fmt.Println("MOVING FROM: ", from, " TO: ", to)
 	var c *card.Card
-	switch from[0] {
-	case "c":
+	switch {
+	case from[0] == "c":
 		// FIXME: Handle converstion error
 		idx, _ := strconv.Atoi(from[1])
 		c = b.Columns[idx][len(b.Columns[idx])-1]
 		c.IsBeingUsed = false
 		b.Columns[idx] = b.Columns[idx][:len(b.Columns[idx])-1]
 		b.Columns[idx][len(b.Columns[idx])-1].IsFlippedDown = false
-	case "s":
+	case from[0] == "s":
 		// FIXME: Handle converstion error
 		idx, _ := strconv.Atoi(from[1])
 		c = b.SuitPile[idx][len(b.SuitPile[idx])-1]
 		c.IsBeingUsed = false
 		b.SuitPile[idx] = b.SuitPile[idx][:len(b.SuitPile[idx])-1]
+	case pc.OriginalPile == DiscardPosition:
+		if len(b.DiscardPile) > 1 {
+			c = b.DiscardPile[0]
+			c.IsBeingUsed = false
+			b.DiscardPile = b.DiscardPile[1:]
+		}
 	}
-	switch to[0] {
-	case "c":
+	switch {
+	case to[0] == "c":
 		// FIXME: Handle converstion error
 		idx, _ := strconv.Atoi(to[1])
 		last := b.Columns[idx][len(b.Columns[idx])-1]
@@ -151,7 +187,7 @@ func (b *Board) MoveCard(pc *card.PlayingCard, position string) bool {
 			c.Frame.Y += card.Spacing
 		}
 		b.Columns[idx] = append(b.Columns[idx], c)
-	case "s":
+	case to[0] == "s":
 		// FIXME: Handle converstion error
 		idx, _ := strconv.Atoi(to[1])
 		last := b.SuitPile[idx][len(b.SuitPile[idx])-1]
