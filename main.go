@@ -48,6 +48,7 @@ func main() {
 	gameBoard := board.New(emptyTexture, backTexture, deck)
 	deckCard := card.New(-1, "-1", 6*card.Width, 0, nil)
 	shouldMove := false
+	// playingCards := []*card.PlayingCard{}
 	pc := new(card.PlayingCard)
 	for running {
 		for event := sdl.WaitEvent(); event != nil; event = sdl.PollEvent() {
@@ -56,19 +57,21 @@ func main() {
 				fmt.Println("Closing Solitaire!")
 				running = false
 			case *sdl.MouseMotionEvent:
+				// gameBoard.CheckPosition(t.X, t.Y)
 				if shouldMove {
 					pc.CardDetails.Frame.X, pc.CardDetails.Frame.Y = t.X-card.Width/2, t.Y-card.Height/2
 				}
 			case *sdl.MouseButtonEvent:
-				boardPosition, card := gameBoard.CheckPosition(t.X, t.Y)
+				// Make the CheckPosition method return an array of cards instead of a single card
+				boardPosition, cards := gameBoard.CheckPosition(t.X, t.Y)
 				if t.State == sdl.RELEASED {
 					if boardPosition == board.DrawPosition && !shouldMove {
 						gameBoard.DrawCard()
 					}
-					if shouldMove {
-						fmt.Println("CARD: ", pc.CardDetails, " DROPPED AT: ", boardPosition, " OVER CARD:", card)
+					if shouldMove && len(cards) > 0 {
+						fmt.Println("CARD: ", pc.CardDetails, " DROPPED AT: ", boardPosition, " OVER CARD:", cards[0])
 						shouldMove = false
-						if !gameBoard.MoveCard(pc, card, boardPosition) {
+						if !gameBoard.MoveCard(pc, cards[0], boardPosition) {
 							pc.CardDetails.Frame.X, pc.CardDetails.Frame.Y = pc.OriginalX, pc.OriginalY
 							pc.CardDetails.IsBeingUsed = false
 							pc.CardDetails = nil
@@ -76,12 +79,12 @@ func main() {
 					}
 				}
 				if t.State == sdl.PRESSED && boardPosition != "" {
-					if boardPosition != board.DrawPosition && !shouldMove && card.Rank != -1 && card.Suit != "-1" {
+					if boardPosition != board.DrawPosition && !shouldMove && len(cards) > 0 && cards[0].Rank != -1 && cards[0].Suit != "-1" {
 						shouldMove = true
-						pc.CardDetails = card
+						pc.CardDetails = cards[0]
 						pc.CardDetails.IsBeingUsed = true
 						pc.OriginalPile = boardPosition
-						pc.OriginalX, pc.OriginalY = card.Frame.X, card.Frame.Y
+						pc.OriginalX, pc.OriginalY = cards[0].Frame.X, cards[0].Frame.Y
 					}
 				}
 			}

@@ -80,7 +80,7 @@ func (b *Board) DrawCard() {
 	}
 }
 
-func (b *Board) CheckPosition(x, y int32) (string, *card.Card) {
+func (b *Board) CheckPosition(x, y int32) (string, []*card.Card) {
 	if checkCollision(x, y, &sdl.Rect{X: 6 * card.Width, Y: 0, H: card.Height, W: card.Width}) {
 		fmt.Println("DRAW PILE")
 		return DrawPosition, nil
@@ -88,21 +88,35 @@ func (b *Board) CheckPosition(x, y int32) (string, *card.Card) {
 	if checkCollision(x, y, b.DiscardPile[0].Frame) {
 		fmt.Println("DISCARD PILE | CARD: ", b.DiscardPile[0])
 		if !b.DiscardPile[0].IsBeingUsed {
-			return DiscardPosition, b.DiscardPile[0]
+			return DiscardPosition, []*card.Card{b.DiscardPile[0]}
 		}
 	}
 	for i := range card.Suits() {
-		card := b.SuitPile[i][len(b.SuitPile[i])-1]
-		if !card.IsBeingUsed && checkCollision(x, y, card.Frame) {
-			fmt.Println("SUIT PILE #", i, " | CARD: ", card)
-			return fmt.Sprintf("s%d", i), card
+		c := b.SuitPile[i][len(b.SuitPile[i])-1]
+		if !c.IsBeingUsed && checkCollision(x, y, c.Frame) {
+			fmt.Println("SUIT PILE #", i, " | CARD: ", c)
+			return fmt.Sprintf("s%d", i), []*card.Card{c}
 		}
 	}
 	for i := range b.Columns {
-		card := b.Columns[i][len(b.Columns[i])-1]
-		if !card.IsBeingUsed && checkCollision(x, y, card.Frame) {
-			fmt.Println("COLUMN #", i, " | CARD: ", card)
-			return fmt.Sprintf("c%d", i), card
+		// for j, c := range b.Columns[i] {
+		// 	switch {
+		// 	case j == len(b.Columns[i])-1:
+		// 		if !c.IsFlippedDown && checkCollision(x, y, c.Frame) {
+		// 			fmt.Println("> COLUMN #", i, " | CARD: ", c)
+		// 		}
+		// 	case j == 0:
+		// 		continue
+		// 	default:
+		// 		if !c.IsFlippedDown && checkCollision(x, y, &sdl.Rect{X: c.Frame.X, Y: c.Frame.Y, H: card.Spacing, W: c.Frame.W}) {
+		// 			fmt.Println("COLUMN #", i, " | CARD: ", c)
+		// 		}
+		// 	}
+		// }
+		c := b.Columns[i][len(b.Columns[i])-1]
+		if !c.IsBeingUsed && checkCollision(x, y, c.Frame) {
+			fmt.Println("COLUMN #", i, " | CARD: ", c)
+			return fmt.Sprintf("c%d", i), []*card.Card{c}
 		}
 	}
 	return "", nil
