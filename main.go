@@ -30,7 +30,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			deck = append(deck, card.New(rank, suit, 6*card.Width, 0, texture))
+			deck = append(deck, card.New(rank, suit, 5*card.Width, 0, texture))
 		}
 	}
 
@@ -44,12 +44,12 @@ func main() {
 		panic(err)
 	}
 
-	board := board.New(emptyTexture, backTexture, deck)
-
 	running := true
+	gameBoard := board.New(emptyTexture, backTexture, deck)
+	// TODO: Refactor variables below
 	deckCard := card.New(-1, "-1", 6*card.Width, 0, nil)
 	shouldMove := false
-	var originalX, originalY int32
+	pc := new(card.PlayingCard)
 	for running {
 		for event := sdl.WaitEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
@@ -57,57 +57,45 @@ func main() {
 				fmt.Println("Closing Solitaire!")
 				running = false
 			case *sdl.MouseMotionEvent:
-				fmt.Println("Mouse", t.Which, "moved by", t.XRel, t.YRel, "at", t.X, t.Y)
 				if shouldMove {
-					c := board.DiscardPile[0]
-					c.Frame.X, c.Frame.Y = t.X, t.Y
+					pc.CardDetails.Frame.X, pc.CardDetails.Frame.Y = t.X-card.Width/2, t.Y-card.Height/2
 				}
 			case *sdl.MouseButtonEvent:
+				boardPosition, card := gameBoard.CheckPosition(t.X, t.Y)
 				if t.State == sdl.RELEASED {
+					if boardPosition == board.DrawPosition && !shouldMove {
+						fmt.Println("DRAWING CARD...")
+						gameBoard.DrawCard()
+					}
 					if shouldMove {
 						shouldMove = false
-						c := board.DiscardPile[0]
-						c.Frame.X, c.Frame.Y = originalX, originalY
-					}
-
-					if t.X > 6*card.Width && t.X < 7*card.Width && t.Y > 0 && t.Y < card.Height {
-						fmt.Println("Mouse", t.Which, "button", t.Button, "released at", t.X, t.Y)
-						if len(board.DrawPile) > 0 {
-							c := board.DrawPile[len(board.DrawPile)-1]
-							c.Frame.X = 5 * card.Width
-
-							board.DrawPile = board.DrawPile[:len(board.DrawPile)-1]
-							board.DiscardPile = append([]*card.Card{c}, board.DiscardPile...)
-						} else {
-							board.DrawPile = board.DiscardPile
-							board.DiscardPile = []*card.Card{}
-						}
+						pc.CardDetails.Frame.X, pc.CardDetails.Frame.Y = pc.OriginalX, pc.OriginalY
+						pc.CardDetails = nil
 					}
 				}
-				if t.State == sdl.PRESSED {
-					if len(board.DiscardPile) > 0 {
-						c := board.DiscardPile[0]
-						if t.X > c.Frame.X && t.X < c.Frame.X+c.Frame.W && t.Y > c.Frame.Y && t.Y < c.Frame.Y+c.Frame.H && !shouldMove {
-							shouldMove = true
-							originalX, originalY = c.Frame.X, c.Frame.Y
-						}
+				if t.State == sdl.PRESSED && boardPosition != "" {
+					if boardPosition != board.DrawPosition && !shouldMove {
+						shouldMove = true
+						pc.CardDetails = card
+						pc.OriginalPile = boardPosition
+						pc.OriginalX, pc.OriginalY = card.Frame.X, card.Frame.Y
 					}
 				}
 			}
 		}
 		rw.Clear()
 		// Render Suite Pile
-		for _, cards := range board.SuitPile {
+		for _, cards := range gameBoard.SuitPile {
 			for _, c := range cards {
 				rw.Render(c)
 			}
 		}
 		// Render Columns
-		for _, cards := range board.Columns {
+		for _, cards := range gameBoard.Columns {
 			for _, c := range cards {
 				if c.IsFlippedDown {
 					originalTexture := c.Texture
-					c.Texture = board.BackCardTexture
+					c.Texture = gameBoard.BackCardTexture
 					rw.Render(c)
 					c.Texture = originalTexture
 				} else {
@@ -116,19 +104,24 @@ func main() {
 			}
 		}
 		// Render Draw Pile
-		if len(board.DrawPile) > 0 {
+		if len(gameBoard.DrawPile) > 0 {
 			deckCard.Texture = backTexture
 		} else {
 			deckCard.Texture = emptyTexture
 		}
 		rw.Render(deckCard)
 		// Render Discard Pile
-		if len(board.DiscardPile) > 1 && shouldMove {
-			rw.Render(board.DiscardPile[1])
-			rw.Render(board.DiscardPile[0])
-		} else if len(board.DiscardPile) > 0 {
-			rw.Render(board.DiscardPile[0])
+		if len(gameBoard.DiscardPile) > 1 && shouldMove {
+			rw.Render(gameBoard.DiscardPile[1])
+			rw.Render(gameBoard.DiscardPile[0])
+		} else if len(gameBoard.DiscardPile) > 0 {
+			rw.Render(gameBoard.DiscardPile[0])
+		}
+		// Render PlayingCard
+		if pc.CardDetails != nil {
+			rw.Render(pc.CardDetails)
 		}
 		rw.Display()
+		sdl.Delay(16)
 	}
 }

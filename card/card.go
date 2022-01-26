@@ -10,6 +10,13 @@ type Card struct {
 	IsFlippedDown bool
 }
 
+type PlayingCard struct {
+	CardDetails  *Card
+	OriginalX    int32
+	OriginalY    int32
+	OriginalPile string
+}
+
 const (
 	Width      int32 = 116
 	Height     int32 = 176
