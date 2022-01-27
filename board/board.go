@@ -73,10 +73,40 @@ func New(rw *renderwindow.RenderWindow, textures map[string]*sdl.Texture) *Board
 }
 
 func (b *Board) Render(rw *renderwindow.RenderWindow) {
+	for _, c := range b.DrawPile {
+		rw.Render(&sdl.Rect{
+			X: int32(NumberOfColumns-1) * card.Width,
+			Y: 0,
+			W: card.Width,
+			H: card.Height,
+		}, b.Textures[c.TextureKey])
+	}
+
+	for _, c := range b.DiscardPile {
+		rw.Render(&sdl.Rect{
+			X: int32(NumberOfColumns-2) * card.Width,
+			Y: 0,
+			W: card.Width,
+			H: card.Height,
+		}, b.Textures[c.TextureKey])
+	}
+
+	for i, suit := range b.SuitPile {
+		for _, c := range suit {
+			rw.Render(&sdl.Rect{
+				X: int32(i) * card.Width,
+				Y: 0,
+				W: card.Width,
+				H: card.Height,
+			}, b.Textures[c.TextureKey])
+		}
+	}
+
+	// FIXME: Place first card over empty card
 	for i, column := range b.Columns {
-		for j, cc := range column {
-			tk := b.Textures[cc.TextureKey]
-			if cc.IsFlippedDown {
+		for j, c := range column {
+			tk := b.Textures[c.TextureKey]
+			if c.IsFlippedDown {
 				tk = b.Textures[card.Back]
 			}
 			rw.Render(&sdl.Rect{
