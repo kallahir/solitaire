@@ -9,10 +9,7 @@ type Card struct {
 	Texture       *sdl.Texture
 	IsFlippedDown bool
 	IsBeingUsed   bool
-}
-
-type PlayingCard struct {
-	CardDetails  *Card
+	// Properties used for movement
 	OriginalX    int32
 	OriginalY    int32
 	OriginalPile string
@@ -33,6 +30,8 @@ func New(rank int32, suit string, x, y int32, texture *sdl.Texture) *Card {
 		Texture:       texture,
 		IsFlippedDown: false,
 		IsBeingUsed:   false,
+		OriginalX:     x,
+		OriginalY:     y,
 	}
 }
 

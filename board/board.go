@@ -129,8 +129,8 @@ func checkCollision(x, y int32, frame *sdl.Rect) bool {
 	return false
 }
 
-func (b *Board) MoveCard(pc *card.PlayingCard, destinationCard *card.Card, position string) bool {
-	from := strings.Split(pc.OriginalPile, "")
+func (b *Board) MoveCard(origin *card.Card, destination *card.Card, position string) bool {
+	from := strings.Split(origin.OriginalPile, "")
 	if len(from) == 0 {
 		return false
 	}
@@ -141,14 +141,14 @@ func (b *Board) MoveCard(pc *card.PlayingCard, destinationCard *card.Card, posit
 		return false
 	}
 
-	fmt.Println("VALIDATING IF: ", pc, " CAN BE PLACED ON TOP OF: ", destinationCard, " AT POSITION: ", to)
+	fmt.Println("VALIDATING IF: ", origin, " CAN BE PLACED ON TOP OF: ", destination, " AT POSITION: ", to)
 	switch to[0] {
 	case "c":
 		idx, _ := strconv.Atoi(to[1])
 		if len(b.Columns[idx]) == 1 {
 			break
 		}
-		if pc.CardDetails.Rank != destinationCard.Rank-1 || !pc.CardDetails.ValidOverlappingSuit(destinationCard) {
+		if origin.Rank != destination.Rank-1 || !origin.ValidOverlappingSuit(destination) {
 			fmt.Println("CARD CAN'T BE PLACED INTO COLUMN ", idx)
 			return false
 		}
@@ -156,13 +156,13 @@ func (b *Board) MoveCard(pc *card.PlayingCard, destinationCard *card.Card, posit
 		// FIXME: Handle converstion error
 		idx, _ := strconv.Atoi(to[1])
 		if len(b.SuitPile[idx]) == 1 {
-			if pc.CardDetails.Rank != card.Ranks()[0] {
+			if origin.Rank != card.Ranks()[0] {
 				fmt.Println("FIRST CARD FROM THE SUIT PILE MUST BE A(1)")
 				return false
 			}
 			break
 		}
-		if pc.CardDetails.Rank != destinationCard.Rank+1 || pc.CardDetails.Suit != destinationCard.Suit {
+		if origin.Rank != destination.Rank+1 || origin.Suit != destination.Suit {
 			fmt.Println("CARD CAN'T BE PLACED INTO SUIT PILE ", idx)
 			return false
 		}
@@ -184,7 +184,7 @@ func (b *Board) MoveCard(pc *card.PlayingCard, destinationCard *card.Card, posit
 		c = b.SuitPile[idx][len(b.SuitPile[idx])-1]
 		c.IsBeingUsed = false
 		b.SuitPile[idx] = b.SuitPile[idx][:len(b.SuitPile[idx])-1]
-	case pc.OriginalPile == DiscardPosition:
+	case origin.OriginalPile == DiscardPosition:
 		if len(b.DiscardPile) > 1 {
 			c = b.DiscardPile[0]
 			c.IsBeingUsed = false

@@ -49,7 +49,7 @@ func main() {
 	deckCard := card.New(-1, "-1", 6*card.Width, 0, nil)
 	shouldMove := false
 	// playingCards := []*card.PlayingCard{}
-	pc := new(card.PlayingCard)
+	var pc *card.Card
 	for running {
 		for event := sdl.WaitEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
@@ -59,7 +59,7 @@ func main() {
 			case *sdl.MouseMotionEvent:
 				// gameBoard.CheckPosition(t.X, t.Y)
 				if shouldMove {
-					pc.CardDetails.Frame.X, pc.CardDetails.Frame.Y = t.X-card.Width/2, t.Y-card.Height/2
+					pc.Frame.X, pc.Frame.Y = t.X-card.Width/2, t.Y-card.Height/2
 				}
 			case *sdl.MouseButtonEvent:
 				// Make the CheckPosition method return an array of cards instead of a single card
@@ -69,20 +69,25 @@ func main() {
 						gameBoard.DrawCard()
 					}
 					if shouldMove && len(cards) > 0 {
-						fmt.Println("CARD: ", pc.CardDetails, " DROPPED AT: ", boardPosition, " OVER CARD:", cards[0])
+						// fmt.Println("CARD: ", pc, " DROPPED AT: ", boardPosition, " OVER CARD:", cards[0])
 						shouldMove = false
 						if !gameBoard.MoveCard(pc, cards[0], boardPosition) {
-							pc.CardDetails.Frame.X, pc.CardDetails.Frame.Y = pc.OriginalX, pc.OriginalY
-							pc.CardDetails.IsBeingUsed = false
-							pc.CardDetails = nil
+							pc.Frame.X, pc.Frame.Y = pc.OriginalX, pc.OriginalY
+							pc.IsBeingUsed = false
+							pc = nil
 						}
+					} else if shouldMove {
+						shouldMove = false
+						pc.Frame.X, pc.Frame.Y = pc.OriginalX, pc.OriginalY
+						pc.IsBeingUsed = false
+						pc = nil
 					}
 				}
 				if t.State == sdl.PRESSED && boardPosition != "" {
 					if boardPosition != board.DrawPosition && !shouldMove && len(cards) > 0 && cards[0].Rank != -1 && cards[0].Suit != "-1" {
 						shouldMove = true
-						pc.CardDetails = cards[0]
-						pc.CardDetails.IsBeingUsed = true
+						pc = cards[0]
+						pc.IsBeingUsed = true
 						pc.OriginalPile = boardPosition
 						pc.OriginalX, pc.OriginalY = cards[0].Frame.X, cards[0].Frame.Y
 					}
@@ -124,8 +129,8 @@ func main() {
 			rw.Render(gameBoard.DiscardPile[0])
 		}
 		// Render PlayingCard
-		if pc.CardDetails != nil {
-			rw.Render(pc.CardDetails)
+		if pc != nil {
+			rw.Render(pc)
 		}
 		rw.Display()
 		sdl.Delay(16)
