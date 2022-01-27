@@ -47,9 +47,8 @@ func main() {
 	running := true
 	gameBoard := board.New(emptyTexture, backTexture, deck)
 	deckCard := card.New(-1, "-1", 6*card.Width, 0, nil)
-	shouldMove := false
-	// playingCards := []*card.PlayingCard{}
-	var pc *card.Card
+	var shouldMove bool
+	var pcCards []*card.Card
 	for running {
 		for event := sdl.WaitEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
@@ -59,6 +58,7 @@ func main() {
 			case *sdl.MouseMotionEvent:
 				// gameBoard.CheckPosition(t.X, t.Y)
 				if shouldMove {
+					pc := pcCards[len(pcCards)-1]
 					pc.Frame.X, pc.Frame.Y = t.X-card.Width/2, t.Y-card.Height/2
 				}
 			case *sdl.MouseButtonEvent:
@@ -69,27 +69,32 @@ func main() {
 						gameBoard.DrawCard()
 					}
 					if shouldMove && len(cards) > 0 {
-						// fmt.Println("CARD: ", pc, " DROPPED AT: ", boardPosition, " OVER CARD:", cards[0])
+						fmt.Println("CARD: ", pcCards[len(cards)-1], " DROPPED AT: ", boardPosition, " OVER CARD:", cards[0])
 						shouldMove = false
-						if !gameBoard.MoveCard(pc, cards[0], boardPosition) {
+						if !gameBoard.MoveCard(pcCards[len(pcCards)-1], cards[0], boardPosition) {
+							pc := pcCards[len(pcCards)-1]
 							pc.Frame.X, pc.Frame.Y = pc.OriginalX, pc.OriginalY
 							pc.IsBeingUsed = false
 							pc = nil
+							pcCards = pcCards[:len(pcCards)-1]
 						}
 					} else if shouldMove {
 						shouldMove = false
+						pc := pcCards[len(pcCards)-1]
 						pc.Frame.X, pc.Frame.Y = pc.OriginalX, pc.OriginalY
 						pc.IsBeingUsed = false
 						pc = nil
+						pcCards = pcCards[:len(pcCards)-1]
 					}
 				}
 				if t.State == sdl.PRESSED && boardPosition != "" {
 					if boardPosition != board.DrawPosition && !shouldMove && len(cards) > 0 && cards[0].Rank != -1 && cards[0].Suit != "-1" {
 						shouldMove = true
-						pc = cards[0]
-						pc.IsBeingUsed = true
-						pc.OriginalPile = boardPosition
-						pc.OriginalX, pc.OriginalY = cards[0].Frame.X, cards[0].Frame.Y
+						cards[0].IsBeingUsed = true
+						cards[0].OriginalPile = boardPosition
+						cards[0].OriginalX = cards[0].Frame.X
+						cards[0].OriginalY = cards[0].Frame.Y
+						pcCards = append(pcCards, cards[0])
 					}
 				}
 			}
@@ -129,8 +134,10 @@ func main() {
 			rw.Render(gameBoard.DiscardPile[0])
 		}
 		// Render PlayingCard
-		if pc != nil {
-			rw.Render(pc)
+		if len(pcCards) > 0 {
+			for i := range pcCards {
+				rw.Render(pcCards[i])
+			}
 		}
 		rw.Display()
 		sdl.Delay(16)
