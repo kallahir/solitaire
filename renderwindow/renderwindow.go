@@ -1,7 +1,6 @@
 package renderwindow
 
 import (
-	"github.com/kallahir/solitaire/card"
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -41,9 +40,8 @@ func (rw *RenderWindow) Clear() {
 	rw.Renderer.Clear()
 }
 
-func (rw *RenderWindow) Render(card *card.Card) {
-	dst := &sdl.Rect{X: card.Frame.X, Y: card.Frame.Y, W: card.Frame.W, H: card.Frame.H}
-	rw.Renderer.Copy(card.Texture, nil, dst)
+func (rw *RenderWindow) Render(frame *sdl.Rect, texture *sdl.Texture) {
+	rw.Renderer.Copy(texture, nil, frame)
 }
 
 func (rw *RenderWindow) Display() {

@@ -1,37 +1,40 @@
 package card
 
-import "github.com/veandco/go-sdl2/sdl"
+import (
+	"fmt"
+)
+
+const (
+	Width      int32  = 116
+	Height     int32  = 176
+	Spacing    int32  = 50
+	MaxShuffle int    = 1000
+	Empty      string = "empty"
+	Back       string = "back"
+)
 
 type Card struct {
 	Rank          int32
 	Suit          string
-	Frame         *sdl.Rect
-	Texture       *sdl.Texture
+	TextureKey    string
 	IsFlippedDown bool
-	IsBeingUsed   bool
-	// Properties used for movement
-	OriginalX    int32
-	OriginalY    int32
-	OriginalPile string
+	// NOTE: Maybe this won't be required as we can abstract this fron the Hand slice in the Board struct
+	IsBeingUsed bool
 }
 
-const (
-	Width      int32 = 116
-	Height     int32 = 176
-	Spacing    int32 = 50
-	MaxShuffle int   = 1000
-)
-
-func New(rank int32, suit string, x, y int32, texture *sdl.Texture) *Card {
+func New(rank int32, suit string) *Card {
+	var textureKey string
+	if suit == Empty || suit == Back {
+		textureKey = suit
+	} else {
+		textureKey = fmt.Sprintf("%02d%s", rank, suit)
+	}
 	return &Card{
 		Rank:          rank,
 		Suit:          suit,
-		Frame:         &sdl.Rect{X: x, Y: y, H: Height, W: Width},
-		Texture:       texture,
+		TextureKey:    textureKey,
 		IsFlippedDown: false,
 		IsBeingUsed:   false,
-		OriginalX:     x,
-		OriginalY:     y,
 	}
 }
 
@@ -43,7 +46,7 @@ func Ranks() []int32 {
 	return []int32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}
 }
 
-func (c *Card) ValidOverlappingSuit(dst *Card) bool {
+func (c *Card) CompareOverlappingSuit(dst *Card) bool {
 	switch {
 	case c.Suit == "s" || c.Suit == "c":
 		if dst.Suit == "s" || dst.Suit == "c" {
