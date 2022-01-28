@@ -81,14 +81,16 @@ func New(rw *renderwindow.RenderWindow, textures map[string]*sdl.Texture) *Board
 }
 
 func (b *Board) Render(rw *renderwindow.RenderWindow, x, y int32) {
-	for _, c := range b.DrawPile {
-		rw.Render(&sdl.Rect{
-			X: int32(NumberOfColumns-1) * card.Width,
-			Y: 0,
-			W: card.Width,
-			H: card.Height,
-		}, b.Textures[c.TextureKey])
+	drawTexture := card.Back
+	if len(b.DrawPile) == 1 {
+		drawTexture = card.Empty
 	}
+	rw.Render(&sdl.Rect{
+		X: int32(NumberOfColumns-1) * card.Width,
+		Y: 0,
+		W: card.Width,
+		H: card.Height,
+	}, b.Textures[drawTexture])
 
 	for _, c := range b.DiscardPile {
 		rw.Render(&sdl.Rect{
