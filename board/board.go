@@ -1,18 +1,22 @@
 package board
 
 import (
+	"fmt"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/kallahir/solitaire/card"
 	"github.com/kallahir/solitaire/renderwindow"
+	"github.com/kallahir/solitaire/utils"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 const (
 	NumberOfColumns = 7
-	DrawPosition    = "dwp"
-	DiscardPosition = "ddp"
+	Columns         = "c"
+	Discard         = "d"
+	Suit            = "s"
 )
 
 type Board struct {
@@ -23,8 +27,8 @@ type Board struct {
 	Textures    map[string]*sdl.Texture
 	IsRunning   bool
 	// Hand Variables
-	Hand                 []*card.Card
-	HandPreviousLocation string
+	Hand       []*card.Card
+	HandOrigin string
 }
 
 func New(rw *renderwindow.RenderWindow, textures map[string]*sdl.Texture) *Board {
@@ -106,42 +110,39 @@ func (b *Board) Render(rw *renderwindow.RenderWindow, x, y int32) {
 		}
 	}
 
-	// FIXME: Place first card over empty card
 	for i, column := range b.Columns {
 		for j, c := range column {
-			verticalSpacing := int32(j) * card.Spacing
+			verticalSpacing := int32(j)*card.Spacing + card.Spacing
 			if j == 0 {
 				verticalSpacing += card.Spacing
 			}
-			tk := b.Textures[c.TextureKey]
+			tk := c.TextureKey
 			if c.IsFlippedDown {
-				tk = b.Textures[card.Back]
+				tk = card.Back
 			}
 			rw.Render(&sdl.Rect{
 				X: int32(i) * card.Width,
-				Y: card.Height + verticalSpacing + card.Spacing,
+				Y: card.Height + verticalSpacing,
 				W: card.Width,
 				H: card.Height,
-			}, tk)
+			}, b.Textures[tk])
 		}
 	}
 
 	for i, c := range b.Hand {
 		rw.Render(&sdl.Rect{
 			X: x - card.Width/2,
-			Y: y - card.Height/2 + int32(i)*card.Spacing,
+			Y: y - card.Height/4 + int32(i)*card.Spacing,
 			W: card.Width,
 			H: card.Height,
 		}, b.Textures[c.TextureKey])
 	}
 }
 
-// TODO1: All sdl.PRESSED events that involves the hand, must records previous location and last card
-// 		  so I can flip the card up and/or put the cards back on the previous location
 // TODO2: All sdl.RELEASED events that involves the hand, must apply the game rules by checking the card
 // 		  on the top of the hand and the card on the bottom of the pile or top of the suit
 func (b *Board) HandleClick(x, y int32, mouseState uint8) {
-	if CheckCollision(x, y, &sdl.Rect{X: 6 * card.Width, Y: 0, H: card.Height, W: card.Width}) {
+	if utils.CheckCollision(x, y, &sdl.Rect{X: 6 * card.Width, Y: 0, H: card.Height, W: card.Width}) {
 		switch {
 		case mouseState == sdl.PRESSED && len(b.DrawPile) > 1:
 			b.DiscardPile = append(b.DiscardPile, b.DrawPile[len(b.DrawPile)-1])
@@ -154,28 +155,26 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 		}
 	}
 
-	if CheckCollision(x, y, &sdl.Rect{X: 5 * card.Width, Y: 0, H: card.Height, W: card.Width}) {
+	if utils.CheckCollision(x, y, &sdl.Rect{X: 5 * card.Width, Y: 0, H: card.Height, W: card.Width}) {
 		switch {
 		case mouseState == sdl.PRESSED && len(b.Hand) == 0 && len(b.DiscardPile) > 1:
 			b.Hand = append(b.Hand, b.DiscardPile[len(b.DiscardPile)-1])
+			b.HandOrigin = Discard
 			b.DiscardPile = b.DiscardPile[:len(b.DiscardPile)-1]
-			// TODO: A Card can only get back to the Discard Pile if it was the last to be removed from there
-			// I think I'll need a flag variable for this, like saving the TextureKey or something like that
-			// case mouseState == sdl.RELEASED && len(b.Hand) == 1 && len(b.DiscardPile) > 1 && b.LastDrawn == b.Hand[0].TextureKey:
-			// 	b.DiscardPile = append(b.DiscardPile, b.Hand...)
-			// 	b.Hand = []*card.Card{}
-			// 	b.LastDrawn = ""
 		}
 	}
 
 	for i := range card.Suits() {
-		if CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: 0, H: card.Height, W: card.Width}) {
+		if utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: 0, H: card.Height, W: card.Width}) {
 			switch {
 			case mouseState == sdl.RELEASED && len(b.Hand) == 1:
 				b.SuitPile[i] = append(b.SuitPile[i], b.Hand...)
 				b.Hand = []*card.Card{}
+				b.FlipOriginCard(b.HandOrigin)
+				b.HandOrigin = ""
 			case mouseState == sdl.PRESSED && len(b.Hand) == 0 && len(b.SuitPile[i]) > 1:
 				b.Hand = append(b.Hand, b.SuitPile[i][len(b.SuitPile[i])-1])
+				b.HandOrigin = fmt.Sprint(Suit, i)
 				b.SuitPile[i] = b.SuitPile[i][:len(b.SuitPile[i])-1]
 			}
 			break
@@ -185,39 +184,44 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 	for i := range b.Columns {
 		for j, c := range b.Columns[i] {
 			switch {
-			case c.IsFlippedDown || (j == 0 && mouseState == sdl.PRESSED):
+			case c.IsFlippedDown || j == 0:
 				continue
-			case mouseState == sdl.PRESSED && j == len(b.Columns[i])-1 && CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Height}):
+			case mouseState == sdl.PRESSED && j == len(b.Columns[i])-1 && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Height}):
 				b.Hand = append(b.Hand, b.Columns[i][len(b.Columns[i])-1])
+				b.HandOrigin = fmt.Sprint(Columns, i)
 				b.Columns[i] = b.Columns[i][:len(b.Columns[i])-1]
-				// FIXME: Flipping the last card from the pile can only happen after the cards are really played
-				if len(b.Columns[i]) > 1 {
-					b.Columns[i][len(b.Columns[i])-1].IsFlippedDown = false
-				}
-			case mouseState == sdl.RELEASED && len(b.Hand) > 0 && CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Height}):
+			case mouseState == sdl.RELEASED && len(b.Hand) > 0 && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Height}):
 				b.Columns[i] = append(b.Columns[i], b.Hand...)
 				b.Hand = []*card.Card{}
-			case mouseState == sdl.PRESSED && CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Spacing}):
+				b.FlipOriginCard(b.HandOrigin)
+				b.HandOrigin = ""
+			case mouseState == sdl.PRESSED && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Spacing}):
 				b.Hand = append(b.Hand, b.Columns[i][j:]...)
-				// FIXME: Flipping the last card from the pile can only happen after the cards are really played
+				b.HandOrigin = fmt.Sprint(Columns, i)
 				b.Columns[i] = b.Columns[i][:j]
-				if len(b.Columns[i]) > 1 {
-					b.Columns[i][len(b.Columns[i])-1].IsFlippedDown = false
-				}
 			}
 		}
 	}
 
-	// FIXME: This may not apply once every region is handled
 	if mouseState == sdl.RELEASED && len(b.Hand) > 0 {
-		b.DiscardPile = append(b.DiscardPile, b.Hand...)
+		switch string(b.HandOrigin[0]) {
+		case Discard:
+			b.DiscardPile = append(b.DiscardPile, b.Hand...)
+		case Suit:
+			idx, _ := strconv.Atoi(string(b.HandOrigin[1]))
+			b.SuitPile[idx] = append(b.SuitPile[idx], b.Hand...)
+		case Columns:
+			idx, _ := strconv.Atoi(string(b.HandOrigin[1]))
+			b.Columns[idx] = append(b.Columns[idx], b.Hand...)
+		}
 		b.Hand = []*card.Card{}
+		b.HandOrigin = ""
 	}
 }
 
-func CheckCollision(x, y int32, boudingBox *sdl.Rect) bool {
-	if x > boudingBox.X && x < boudingBox.X+boudingBox.W && y > boudingBox.Y && y < boudingBox.Y+boudingBox.H {
-		return true
+func (b *Board) FlipOriginCard(origin string) {
+	if string(origin[0]) == Columns {
+		idx, _ := strconv.Atoi(string(b.HandOrigin[1]))
+		b.Columns[idx][len(b.Columns[idx])-1].IsFlippedDown = false
 	}
-	return false
 }

@@ -18,6 +18,7 @@ type Card struct {
 	Suit          string
 	TextureKey    string
 	IsFlippedDown bool
+	IsSpecialCard bool
 }
 
 func New(rank int32, suit string) *Card {

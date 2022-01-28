@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
 	"io/ioutil"
-	"strings"
 
 	"github.com/kallahir/solitaire/board"
 	"github.com/kallahir/solitaire/renderwindow"
+	"github.com/kallahir/solitaire/utils"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -39,7 +38,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fileName, err := RemoveFileExtension(file)
+		fileName, err := utils.RemoveFileExtension(file)
 		if err != nil {
 			panic(err)
 		}
@@ -52,7 +51,7 @@ func main() {
 		for event := sdl.WaitEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
-				fmt.Println("Closing Solitaire!", t)
+				fmt.Println("Closing Solitaire!")
 				game.IsRunning = false
 			case *sdl.MouseMotionEvent:
 				x, y = t.X, t.Y
@@ -65,12 +64,4 @@ func main() {
 		rw.Display()
 		sdl.Delay(16)
 	}
-}
-
-func RemoveFileExtension(file fs.FileInfo) (string, error) {
-	result := strings.Split(file.Name(), ".")
-	if len(result) < 2 || len(result) > 2 {
-		return "", fmt.Errorf("can't remove file extension from %s", file.Name())
-	}
-	return result[0], nil
 }
