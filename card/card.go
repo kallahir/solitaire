@@ -18,8 +18,6 @@ type Card struct {
 	Suit          string
 	TextureKey    string
 	IsFlippedDown bool
-	// NOTE: Maybe this won't be required as we can abstract this fron the Hand slice in the Board struct
-	IsBeingUsed bool
 }
 
 func New(rank int32, suit string) *Card {
@@ -29,13 +27,7 @@ func New(rank int32, suit string) *Card {
 	} else {
 		textureKey = fmt.Sprintf("%02d%s", rank, suit)
 	}
-	return &Card{
-		Rank:          rank,
-		Suit:          suit,
-		TextureKey:    textureKey,
-		IsFlippedDown: false,
-		IsBeingUsed:   false,
-	}
+	return &Card{Rank: rank, Suit: suit, TextureKey: textureKey}
 }
 
 func Suits() []string {
