@@ -139,8 +139,6 @@ func (b *Board) Render(rw *renderwindow.RenderWindow, x, y int32) {
 	}
 }
 
-// TODO2: All sdl.RELEASED events that involves the hand, must apply the game rules by checking the card
-// 		  on the top of the hand and the card on the bottom of the pile or top of the suit
 func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 	if utils.CheckCollision(x, y, &sdl.Rect{X: 6 * card.Width, Y: 0, H: card.Height, W: card.Width}) {
 		switch {
@@ -168,6 +166,9 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 		if utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: 0, H: card.Height, W: card.Width}) {
 			switch {
 			case mouseState == sdl.RELEASED && len(b.Hand) == 1:
+				if !b.ValidateMovement(Suit, i) {
+					continue
+				}
 				b.SuitPile[i] = append(b.SuitPile[i], b.Hand...)
 				b.Hand = []*card.Card{}
 				b.FlipOriginCard(b.HandOrigin)
@@ -184,13 +185,16 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 	for i := range b.Columns {
 		for j, c := range b.Columns[i] {
 			switch {
-			case c.IsFlippedDown || j == 0:
+			case c.IsFlippedDown || (j == 0 && mouseState == sdl.PRESSED):
 				continue
 			case mouseState == sdl.PRESSED && j == len(b.Columns[i])-1 && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Height}):
 				b.Hand = append(b.Hand, b.Columns[i][len(b.Columns[i])-1])
 				b.HandOrigin = fmt.Sprint(Columns, i)
 				b.Columns[i] = b.Columns[i][:len(b.Columns[i])-1]
 			case mouseState == sdl.RELEASED && len(b.Hand) > 0 && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Height}):
+				if !b.ValidateMovement(Columns, i) {
+					continue
+				}
 				b.Columns[i] = append(b.Columns[i], b.Hand...)
 				b.Hand = []*card.Card{}
 				b.FlipOriginCard(b.HandOrigin)
@@ -203,6 +207,7 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 		}
 	}
 
+	// Returning any cards from the Hand to its Original Position
 	if mouseState == sdl.RELEASED && len(b.Hand) > 0 {
 		switch string(b.HandOrigin[0]) {
 		case Discard:
@@ -224,4 +229,21 @@ func (b *Board) FlipOriginCard(origin string) {
 		idx, _ := strconv.Atoi(string(b.HandOrigin[1]))
 		b.Columns[idx][len(b.Columns[idx])-1].IsFlippedDown = false
 	}
+}
+
+func (b *Board) ValidateMovement(pile string, idx int) bool {
+	src := b.Hand[0]
+	switch pile {
+	case Suit:
+		dst := b.SuitPile[idx][len(b.SuitPile[idx])-1]
+		if (dst.Suit == src.Suit && dst.Rank == src.Rank-1) || (dst.Rank == -1 && src.Rank == 1) {
+			return true
+		}
+	case Columns:
+		dst := b.Columns[idx][len(b.Columns[idx])-1]
+		if (dst.CompareOverlappingSuit(src) && dst.Rank == src.Rank+1) || (dst.Rank == -1 && src.Rank == 13) {
+			return true
+		}
+	}
+	return false
 }
