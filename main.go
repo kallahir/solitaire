@@ -61,7 +61,53 @@ func main() {
 		}
 		rw.Clear()
 		game.Render(rw, x, y)
+		if game.IsOver() {
+			switch GetUserInput(rw.Window) {
+			case -1:
+				fmt.Println("No selection...")
+			case 1:
+				fmt.Println("Restarting game...")
+				game = board.New(rw, textures)
+			case 2:
+				fmt.Println("Closing Solitaire!")
+				game.IsRunning = false
+			}
+		}
 		rw.Display()
 		sdl.Delay(16)
 	}
+}
+
+func GetUserInput(w *sdl.Window) int32 {
+	buttons := []sdl.MessageBoxButtonData{
+		{Flags: sdl.MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, ButtonID: 1, Text: "Yes"},
+		{Flags: sdl.MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, ButtonID: 2, Text: "Quit"},
+	}
+
+	colorScheme := sdl.MessageBoxColorScheme{
+		Colors: [5]sdl.MessageBoxColor{
+			{R: 255, G: 0, B: 0},
+			{R: 0, G: 255, B: 0},
+			{R: 255, G: 255, B: 0},
+			{R: 0, G: 0, B: 255},
+			{R: 255, G: 0, B: 255},
+		},
+	}
+
+	messageboxdata := sdl.MessageBoxData{
+		Flags:       sdl.MESSAGEBOX_INFORMATION,
+		Window:      w,
+		Title:       "Congratulations!\nYou Won!",
+		Message:     "Do you want to play another match?",
+		Buttons:     buttons,
+		ColorScheme: &colorScheme,
+	}
+
+	var buttonid int32
+	var err error
+	if buttonid, err = sdl.ShowMessageBox(&messageboxdata); err != nil {
+		panic(err)
+	}
+
+	return buttonid
 }

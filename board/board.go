@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	NumberOfColumns = 7
-	Columns         = "c"
-	Discard         = "d"
-	Suit            = "s"
+	NumberOfColumns    = 7
+	NumberOfCardsToWin = 56
+	Columns            = "c"
+	Discard            = "d"
+	Suit               = "s"
 )
 
 type Board struct {
@@ -248,4 +249,12 @@ func (b *Board) ValidateMovement(pile string, idx int) bool {
 		}
 	}
 	return false
+}
+
+func (b *Board) IsOver() bool {
+	total := 0
+	for i := range b.SuitPile {
+		total += len(b.SuitPile[i])
+	}
+	return total == NumberOfCardsToWin
 }

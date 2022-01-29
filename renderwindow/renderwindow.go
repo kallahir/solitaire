@@ -11,7 +11,7 @@ type RenderWindow struct {
 }
 
 func New(title string, w, h int32) (*RenderWindow, error) {
-	window, err := sdl.CreateWindow(title, 0, 0, w, h, sdl.WINDOW_SHOWN)
+	window, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, w, h, sdl.WINDOW_SHOWN)
 	if err != nil {
 		return nil, err
 	}
