@@ -87,16 +87,16 @@ func (b *Board) Render(rw *renderwindow.RenderWindow, x, y int32) {
 		drawTexture = card.Empty
 	}
 	rw.Render(&sdl.Rect{
-		X: int32(NumberOfColumns-1) * card.Width,
-		Y: 0,
+		X: int32(NumberOfColumns-1)*card.Width + int32(NumberOfColumns)*card.HSpacing,
+		Y: card.HSpacing,
 		W: card.Width,
 		H: card.Height,
 	}, b.Textures[drawTexture])
 
 	for _, c := range b.DiscardPile {
 		rw.Render(&sdl.Rect{
-			X: int32(NumberOfColumns-2) * card.Width,
-			Y: 0,
+			X: int32(NumberOfColumns-2)*card.Width + int32(NumberOfColumns-1)*card.HSpacing,
+			Y: card.HSpacing,
 			W: card.Width,
 			H: card.Height,
 		}, b.Textures[c.TextureKey])
@@ -105,8 +105,8 @@ func (b *Board) Render(rw *renderwindow.RenderWindow, x, y int32) {
 	for i, suit := range b.SuitPile {
 		for _, c := range suit {
 			rw.Render(&sdl.Rect{
-				X: int32(i) * card.Width,
-				Y: 0,
+				X: int32(i)*card.Width + int32(i+1)*card.HSpacing,
+				Y: card.HSpacing,
 				W: card.Width,
 				H: card.Height,
 			}, b.Textures[c.TextureKey])
@@ -115,16 +115,16 @@ func (b *Board) Render(rw *renderwindow.RenderWindow, x, y int32) {
 
 	for i, column := range b.Columns {
 		for j, c := range column {
-			verticalSpacing := int32(j)*card.Spacing + card.Spacing
+			verticalSpacing := int32(j)*card.VSpacing + card.VSpacing
 			if j == 0 {
-				verticalSpacing += card.Spacing
+				verticalSpacing += card.VSpacing
 			}
 			tk := c.TextureKey
 			if c.IsFlippedDown {
 				tk = card.Back
 			}
 			rw.Render(&sdl.Rect{
-				X: int32(i) * card.Width,
+				X: int32(i)*card.Width + int32(i+1)*card.HSpacing,
 				Y: card.Height + verticalSpacing,
 				W: card.Width,
 				H: card.Height,
@@ -135,7 +135,7 @@ func (b *Board) Render(rw *renderwindow.RenderWindow, x, y int32) {
 	for i, c := range b.Hand {
 		rw.Render(&sdl.Rect{
 			X: x - card.Width/2,
-			Y: y - card.Height/4 + int32(i)*card.Spacing,
+			Y: y - card.Height/4 + int32(i)*card.VSpacing,
 			W: card.Width,
 			H: card.Height,
 		}, b.Textures[c.TextureKey])
@@ -143,7 +143,7 @@ func (b *Board) Render(rw *renderwindow.RenderWindow, x, y int32) {
 }
 
 func (b *Board) HandleClick(x, y int32, mouseState uint8) {
-	if utils.CheckCollision(x, y, &sdl.Rect{X: 6 * card.Width, Y: 0, H: card.Height, W: card.Width}) {
+	if utils.CheckCollision(x, y, &sdl.Rect{X: int32(NumberOfColumns-1)*card.Width + int32(NumberOfColumns)*card.HSpacing, Y: card.HSpacing, H: card.Height, W: card.Width}) {
 		switch {
 		case mouseState == sdl.PRESSED && len(b.DrawPile) > 1:
 			b.DiscardPile = append(b.DiscardPile, b.DrawPile[len(b.DrawPile)-1])
@@ -156,7 +156,7 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 		}
 	}
 
-	if utils.CheckCollision(x, y, &sdl.Rect{X: 5 * card.Width, Y: 0, H: card.Height, W: card.Width}) {
+	if utils.CheckCollision(x, y, &sdl.Rect{X: int32(NumberOfColumns-2)*card.Width + int32(NumberOfColumns-1)*card.HSpacing, Y: card.HSpacing, H: card.Height, W: card.Width}) {
 		switch {
 		case mouseState == sdl.PRESSED && len(b.Hand) == 0 && len(b.DiscardPile) > 1:
 			b.Hand = append(b.Hand, b.DiscardPile[len(b.DiscardPile)-1])
@@ -166,7 +166,7 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 	}
 
 	for i := range card.Suits() {
-		if utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: 0, H: card.Height, W: card.Width}) {
+		if utils.CheckCollision(x, y, &sdl.Rect{X: int32(i)*card.Width + int32(i+1)*card.HSpacing, Y: card.HSpacing, H: card.Height, W: card.Width}) {
 			switch {
 			case mouseState == sdl.RELEASED && len(b.Hand) == 1:
 				if !b.ValidateMovement(Suit, i) {
@@ -190,11 +190,11 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 			switch {
 			case c.IsFlippedDown || (j == 0 && mouseState == sdl.PRESSED):
 				continue
-			case mouseState == sdl.PRESSED && j == len(b.Columns[i])-1 && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Height}):
+			case mouseState == sdl.PRESSED && j == len(b.Columns[i])-1 && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i)*card.Width + int32(i+1)*card.HSpacing, Y: card.Height + (int32(j) * card.VSpacing) + card.VSpacing, W: card.Width, H: card.Height}):
 				b.Hand = append(b.Hand, b.Columns[i][len(b.Columns[i])-1])
 				b.HandOrigin = fmt.Sprint(Columns, i)
 				b.Columns[i] = b.Columns[i][:len(b.Columns[i])-1]
-			case mouseState == sdl.RELEASED && len(b.Hand) > 0 && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Height}):
+			case mouseState == sdl.RELEASED && len(b.Hand) > 0 && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i)*card.Width + int32(i+1)*card.HSpacing, Y: card.Height + (int32(j) * card.VSpacing) + card.VSpacing, W: card.Width, H: card.Height}):
 				if !b.ValidateMovement(Columns, i) {
 					continue
 				}
@@ -202,7 +202,7 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 				b.Hand = []*card.Card{}
 				b.FlipOriginCard(b.HandOrigin)
 				b.HandOrigin = ""
-			case mouseState == sdl.PRESSED && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i) * card.Width, Y: card.Height + (int32(j) * card.Spacing) + card.Spacing, W: card.Width, H: card.Spacing}):
+			case mouseState == sdl.PRESSED && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i)*card.Width + int32(i+1)*card.HSpacing, Y: card.Height + (int32(j) * card.VSpacing) + card.VSpacing, W: card.Width, H: card.VSpacing}):
 				b.Hand = append(b.Hand, b.Columns[i][j:]...)
 				b.HandOrigin = fmt.Sprint(Columns, i)
 				b.Columns[i] = b.Columns[i][:j]

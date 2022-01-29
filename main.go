@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 
 	"github.com/kallahir/solitaire/board"
+	"github.com/kallahir/solitaire/card"
 	"github.com/kallahir/solitaire/renderwindow"
 	"github.com/kallahir/solitaire/utils"
 	"github.com/veandco/go-sdl2/sdl"
@@ -18,7 +19,7 @@ func main() {
 	}
 	defer sdl.Quit()
 
-	rw, err := renderwindow.New("Solitaire", 812, 900)
+	rw, err := renderwindow.New("Solitaire", board.NumberOfColumns*card.Width+(board.NumberOfColumns+1)*card.HSpacing, 1024)
 	if err != nil {
 		panic(err)
 	}

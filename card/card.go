@@ -7,7 +7,8 @@ import (
 const (
 	Width      int32  = 116
 	Height     int32  = 176
-	Spacing    int32  = 50
+	VSpacing   int32  = 50
+	HSpacing   int32  = 15
 	MaxShuffle int    = 1000
 	Empty      string = "empty"
 	Back       string = "back"
