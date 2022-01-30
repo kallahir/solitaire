@@ -57,7 +57,12 @@ func main() {
 			case *sdl.MouseMotionEvent:
 				x, y = t.X, t.Y
 			case *sdl.MouseButtonEvent:
-				game.HandleClick(t.X, t.Y, t.State)
+				switch {
+				case t.Button == sdl.BUTTON_LEFT:
+					game.HandleClick(t.X, t.Y, t.State)
+				case t.Button == sdl.BUTTON_RIGHT && t.State == sdl.PRESSED:
+					game.HandleRightClick(t.X, t.Y)
+				}
 			}
 		}
 		rw.Clear()

@@ -169,7 +169,7 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 		if utils.CheckCollision(x, y, &sdl.Rect{X: int32(i)*card.Width + int32(i+1)*card.HSpacing, Y: card.HSpacing, H: card.Height, W: card.Width}) {
 			switch {
 			case mouseState == sdl.RELEASED && len(b.Hand) == 1:
-				if !b.ValidateMovement(Suit, i) {
+				if !b.ValidateMovement(Suit, i, b.Hand[0]) {
 					continue
 				}
 				b.SuitPile[i] = append(b.SuitPile[i], b.Hand...)
@@ -195,7 +195,7 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 				b.HandOrigin = fmt.Sprint(Columns, i)
 				b.Columns[i] = b.Columns[i][:len(b.Columns[i])-1]
 			case mouseState == sdl.RELEASED && len(b.Hand) > 0 && utils.CheckCollision(x, y, &sdl.Rect{X: int32(i)*card.Width + int32(i+1)*card.HSpacing, Y: card.Height + (int32(j) * card.VSpacing) + card.VSpacing, W: card.Width, H: card.Height}):
-				if !b.ValidateMovement(Columns, i) {
+				if !b.ValidateMovement(Columns, i, b.Hand[0]) {
 					continue
 				}
 				b.Columns[i] = append(b.Columns[i], b.Hand...)
@@ -227,6 +227,39 @@ func (b *Board) HandleClick(x, y int32, mouseState uint8) {
 	}
 }
 
+func (b *Board) HandleRightClick(x, y int32) {
+	if utils.CheckCollision(x, y, &sdl.Rect{X: int32(NumberOfColumns-2)*card.Width + int32(NumberOfColumns-1)*card.HSpacing, Y: card.HSpacing, H: card.Height, W: card.Width}) {
+		c := b.DiscardPile[len(b.DiscardPile)-1]
+		if b.AutoFillSuitPile(c) {
+			b.DiscardPile = b.DiscardPile[:len(b.DiscardPile)-1]
+		}
+	}
+
+	for i := range b.Columns {
+		j := len(b.Columns[i]) - 1
+		c := b.Columns[i][j]
+		if c.IsFlippedDown || j == 0 {
+			continue
+		}
+		if utils.CheckCollision(x, y, &sdl.Rect{X: int32(i)*card.Width + int32(i+1)*card.HSpacing, Y: card.Height + (int32(j) * card.VSpacing) + card.VSpacing, W: card.Width, H: card.Height}) {
+			if b.AutoFillSuitPile(c) {
+				b.Columns[i] = b.Columns[i][:j]
+				b.Columns[i][j-1].IsFlippedDown = false
+			}
+		}
+	}
+}
+
+func (b *Board) AutoFillSuitPile(c *card.Card) bool {
+	for idx := range b.SuitPile {
+		if b.ValidateMovement(Suit, idx, c) {
+			b.SuitPile[idx] = append(b.SuitPile[idx], c)
+			return true
+		}
+	}
+	return false
+}
+
 func (b *Board) FlipOriginCard(origin string) {
 	if string(origin[0]) == Columns {
 		idx, _ := strconv.Atoi(string(b.HandOrigin[1]))
@@ -234,8 +267,7 @@ func (b *Board) FlipOriginCard(origin string) {
 	}
 }
 
-func (b *Board) ValidateMovement(pile string, idx int) bool {
-	src := b.Hand[0]
+func (b *Board) ValidateMovement(pile string, idx int, src *card.Card) bool {
 	switch pile {
 	case Suit:
 		dst := b.SuitPile[idx][len(b.SuitPile[idx])-1]
