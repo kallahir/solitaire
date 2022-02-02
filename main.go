@@ -8,6 +8,7 @@ import (
 	"github.com/kallahir/solitaire/card"
 	"github.com/kallahir/solitaire/renderwindow"
 	"github.com/kallahir/solitaire/utils"
+	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -24,6 +25,24 @@ func main() {
 		panic(err)
 	}
 	defer rw.CleanUp()
+
+	surface, err := img.Load("resources/assets/firework.png")
+	if err != nil {
+		panic(err)
+	}
+	defer surface.Free()
+
+	firework, err := rw.Renderer.CreateTextureFromSurface(surface)
+	if err != nil {
+		panic(err)
+	}
+
+	var fireworkFrames []*sdl.Rect
+	for i := 0; i < 6; i++ {
+		for j := 0; j < 7; j++ {
+			fireworkFrames = append(fireworkFrames, &sdl.Rect{int32(i) * 256, int32(j) * 256, 256, 256})
+		}
+	}
 
 	resources, err := ioutil.ReadDir("resources/cards")
 	if err != nil {
@@ -48,8 +67,11 @@ func main() {
 
 	game := board.New(rw, textures)
 	var x, y int32
+	var currentFrame int
+	var slowRateFrame int
+	var won bool
 	for game.IsRunning {
-		for event := sdl.WaitEvent(); event != nil; event = sdl.PollEvent() {
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
 				fmt.Println("Closing Solitaire!")
@@ -62,6 +84,13 @@ func main() {
 					game.HandleClick(t.X, t.Y, t.State)
 				case t.Button == sdl.BUTTON_RIGHT && t.State == sdl.PRESSED:
 					game.HandleRightClick(t.X, t.Y)
+				}
+			case *sdl.KeyboardEvent:
+				switch t.Keysym.Scancode {
+				case sdl.SCANCODE_F2:
+					won = true
+				case sdl.SCANCODE_F3:
+					won = false
 				}
 			}
 		}
@@ -77,6 +106,20 @@ func main() {
 			case 2:
 				fmt.Println("Closing Solitaire!")
 				game.IsRunning = false
+			}
+		}
+		if won {
+			dst := &sdl.Rect{0, 0, 256, 256}
+			rw.Renderer.Copy(firework, fireworkFrames[currentFrame], dst)
+			if currentFrame > len(fireworkFrames)-2 {
+				currentFrame = 0
+			} else if slowRateFrame == 5 {
+				currentFrame += 1
+			}
+			if slowRateFrame == 6 {
+				slowRateFrame = 0
+			} else {
+				slowRateFrame += 1
 			}
 		}
 		rw.Display()
