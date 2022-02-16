@@ -2,16 +2,15 @@ package utils
 
 import (
 	"fmt"
-	"io/fs"
 	"strings"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-func RemoveFileExtension(file fs.FileInfo) (string, error) {
-	result := strings.Split(file.Name(), ".")
+func RemoveFileExtension(filename string) (string, error) {
+	result := strings.Split(filename, ".")
 	if len(result) < 2 || len(result) > 2 {
-		return "", fmt.Errorf("can't remove file extension from %s", file.Name())
+		return "", fmt.Errorf("can't remove file extension from %s", filename)
 	}
 	return result[0], nil
 }

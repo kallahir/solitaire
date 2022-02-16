@@ -39,7 +39,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fileName, err := utils.RemoveFileExtension(file)
+		fileName, err := utils.RemoveFileExtension(file.Name())
 		if err != nil {
 			panic(err)
 		}
