@@ -1,7 +1,5 @@
 # Solitaire
 
-[![codecov](https://codecov.io/gh/kallahir/solitaire/branch/master/graph/badge.svg)](https://codecov.io/gh/kallahir/solitaire)
-
 ## Overview
 Solitaire game written in Golang using [SDL2 binding for Go](https://github.com/veandco/go-sdl2).
 
