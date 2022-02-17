@@ -11,9 +11,19 @@ Solitaire game written in Golang using [SDL2 binding for Go](https://github.com/
 
 ## Running Unit Tests
 
+Run unit tests for the entire project and output code coverage details:
 ```
-go test -v ./... -cover -coverprofile=c.out
+go test -v -coverpkg=./... -cover -coverprofile=c.out ./...
+```
+
+Generate HTML visualization from code coverate output:
+```
 go tool cover -html=c.out -o coverage.html
+```
+
+Detailed list of code coverage per method and total coverage:
+```
+go tool cover -func c.out
 ```
 
 ## Copyright Attribution
