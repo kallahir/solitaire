@@ -12,7 +12,7 @@ Solitaire game written in Golang using [SDL2 binding for Go](https://github.com/
 ## Running Unit Tests
 
 ```
-go test ./... -cover -coverprofile=c.out
+go test -v ./... -cover -coverprofile=c.out
 go tool cover -html=c.out -o coverage.html
 ```
 
