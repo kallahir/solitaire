@@ -54,7 +54,7 @@ func TestCompareOverlappingSuit(t *testing.T) {
 		{
 			src:  &Card{Rank: 1, Suit: "c"},
 			dst:  &Card{Rank: 1, Suit: "s"},
-			want: true,
+			want: false,
 		},
 	}
 
