@@ -5,13 +5,12 @@ import (
 )
 
 const (
-	Width      int32  = 116
-	Height     int32  = 176
-	VSpacing   int32  = 50
-	HSpacing   int32  = 15
-	MaxShuffle int    = 1000
-	Empty      string = "empty"
-	Back       string = "back"
+	Width    int32  = 116
+	Height   int32  = 176
+	VSpacing int32  = 50
+	HSpacing int32  = 15
+	Empty    string = "empty"
+	Back     string = "back"
 )
 
 type Card struct {

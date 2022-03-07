@@ -40,11 +40,9 @@ func New(rw *renderwindow.RenderWindow, textures map[string]*sdl.Texture) *Board
 		}
 	}
 
-	// Shuffle Cards random number of times up to card.MaxShuffle
-	for i := 0; i < rand.Intn(card.MaxShuffle); i++ {
-		rand.Seed(time.Now().UnixNano())
-		rand.Shuffle(len(deck), func(i, j int) { deck[i], deck[j] = deck[j], deck[i] })
-	}
+	// Shuffle Cards
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(deck), func(i, j int) { deck[i], deck[j] = deck[j], deck[i] })
 
 	// Pick Cards for the Columns
 	var columns [7][]*card.Card
