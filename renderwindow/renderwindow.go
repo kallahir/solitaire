@@ -1,6 +1,8 @@
 package renderwindow
 
 import (
+	"embed"
+
 	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -28,8 +30,16 @@ func (rw *RenderWindow) CleanUp() {
 	rw.Window.Destroy()
 }
 
-func (rw *RenderWindow) LoadTexture(path string) (*sdl.Texture, error) {
-	texture, err := img.LoadTexture(rw.Renderer, path)
+func (rw *RenderWindow) LoadTextureFromEmbedFS(fs embed.FS, path string) (*sdl.Texture, error) {
+	file, err := fs.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	fileRW, err := sdl.RWFromMem(file)
+	if err != nil {
+		return nil, err
+	}
+	texture, err := img.LoadTextureRW(rw.Renderer, fileRW, true)
 	if err != nil {
 		return nil, err
 	}

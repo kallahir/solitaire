@@ -1,8 +1,8 @@
 package main
 
 import (
+	"embed"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/kallahir/solitaire/board"
 	"github.com/kallahir/solitaire/card"
@@ -10,6 +10,9 @@ import (
 	"github.com/kallahir/solitaire/utils"
 	"github.com/veandco/go-sdl2/sdl"
 )
+
+//go:embed resources/cards
+var fs embed.FS
 
 func main() {
 	fmt.Println("Welcome to Solitaire!")
@@ -25,7 +28,7 @@ func main() {
 	}
 	defer rw.CleanUp()
 
-	resources, err := ioutil.ReadDir("resources/cards")
+	resources, err := fs.ReadDir("resources/cards")
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +38,7 @@ func main() {
 		if file.IsDir() {
 			continue
 		}
-		texture, err := rw.LoadTexture(fmt.Sprintf("resources/cards/%s", file.Name()))
+		texture, err := rw.LoadTextureFromEmbedFS(fs, fmt.Sprintf("resources/cards/%s", file.Name()))
 		if err != nil {
 			panic(err)
 		}
